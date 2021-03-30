@@ -251,7 +251,7 @@ mod tests {
 	use crate as pallet_kitties;
 
 	use sp_core::H256;
-	use frame_support::{assert_ok, assert_noop, parameter_types};
+	use frame_support::{parameter_types};
 	use sp_runtime::{
 		traits::{BlakeTwo256, IdentityLookup}, testing::Header, 
 	};
@@ -261,6 +261,7 @@ mod tests {
 	type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Test>;
 	type Block = frame_system::mocking::MockBlock<Test>;
 	
+	
 	// Configure a mock runtime to test the pallet.
 	frame_support::construct_runtime!(
 		pub enum Test where
@@ -269,7 +270,7 @@ mod tests {
 		UncheckedExtrinsic = UncheckedExtrinsic,
 		{
 			System: frame_system::{Module, Call, Config, Storage, Event<T>},
-			KittieModule: pallet_kitties::{Module, Call, Storage, Event<T>},
+			KittiesModule: pallet_kitties::{Module, Call, Storage, Event<T>},
 		}
 	);
 	
@@ -319,11 +320,55 @@ mod tests {
 	#[test]
 	fn owned_kitties_can_append_values() {
 		new_test_ext().execute_with(|| {
-			OwnedKittiesTest::append(&1);
+			OwnedKittiesTest::append(&0, 1);
 
 			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem {
 				prev: Some(1),
 				next: Some(1),
+			}));
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(1))), Some(KittyLinkedItem {
+				prev: None,
+				next: None,
+			}));
+
+			OwnedKittiesTest::append(&0, 2);
+
+			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem {
+				prev: Some(2),
+				next: Some(1),
+			}));
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(1))), Some(KittyLinkedItem {
+				prev: None,
+				next: Some(2),
+			}));
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(2))), Some(KittyLinkedItem {
+				prev: Some(1),
+				next: None,
+			}));
+
+			OwnedKittiesTest::append(&0, 3);
+
+			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem {
+				prev: Some(3),
+				next: Some(1),
+			}));
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(1))), Some(KittyLinkedItem {
+				prev: None,
+				next: Some(2),
+			}));
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(2))), Some(KittyLinkedItem {
+				prev: Some(1),
+				next: Some(3),
+			}));
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(3))), Some(KittyLinkedItem {
+				prev: Some(2),
+				next: None,
 			}));
 		});
 	}
@@ -331,16 +376,57 @@ mod tests {
 	#[test]
 	fn owned_kitties_can_remove_values() {
 		new_test_ext().execute_with(|| {
-			OwnedKittiesTest::append(1);
-			OwnedKittiesTest::append(2);
-			OwnedKittiesTest::append(3);
+			OwnedKittiesTest::append(&0, 1);
+			OwnedKittiesTest::append(&0, 2);
+			OwnedKittiesTest::append(&0, 3);
 
-			OwnedKittiesTest::remove(2);
+			OwnedKittiesTest::remove(&0, 2);
 
 			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem {
 				prev: Some(3),
 				next: Some(1),
 			}));
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(1))), Some(KittyLinkedItem {
+				prev: None,
+				next: Some(3),
+			}));
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(2))), None);
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(3))), Some(KittyLinkedItem {
+				prev: Some(1),
+				next: None,
+			}));
+
+			OwnedKittiesTest::remove(&0, 1);
+
+			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem {
+				prev: Some(3),
+				next: Some(3),
+			}));
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(1))), None);
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(2))), None);
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(3))), Some(KittyLinkedItem {
+				prev: None,
+				next: None,
+			}));
+
+			OwnedKittiesTest::remove(&0, 3);
+
+			assert_eq!(OwnedKittiesTest::get(&(0, None)), Some(KittyLinkedItem {
+				prev: None,
+				next: None,
+			}));
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(1))), None);
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(2))), None);
+
+			assert_eq!(OwnedKittiesTest::get(&(0, Some(2))), None);
 		});
 	}
 }
